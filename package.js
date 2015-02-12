@@ -1,8 +1,8 @@
 Package.describe({
   name: 'ostrio:loggermongo',
-  version: '0.0.1',
+  version: '0.0.2',
   summary: 'Simply store application logs into MongoDB within ostrio:logger package',
-  git: '',
+  git: 'https://github.com/VeliovGroup/Meteor-logger-mongo',
   documentation: 'README.md'
 });
 

@@ -24,6 +24,9 @@ Meteor.log.fatal(message, data, userId);
 Meteor.log.warn(message, data, userId);
 ```
 
+##### Collection
+All logs will be available in "ostrioMongoLogger" collection
+
 ##### Activate and set adapter settings [`Server` & `Client`]
 ```javascript
 Meteor.log.rule('Mongo', 
