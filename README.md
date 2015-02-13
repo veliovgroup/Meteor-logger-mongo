@@ -22,10 +22,23 @@ Meteor.log.debug(message, data, userId);
 Meteor.log.error(message, data, userId);
 Meteor.log.fatal(message, data, userId);
 Meteor.log.warn(message, data, userId);
+Meteor.log.trace(message, data, userId);
+Meteor.log._(message, data, userId); //--> Shortcut for logging without message, e.g.: simple plain log
 ```
 
 ##### Collection
-All logs will be available in "ostrioMongoLogger" collection
+All logs will be available in `ostrioMongoLogger` collection, as next object:
+```coffeescript
+doc =
+  userId: userId             # UserID if Log was submitted
+                             # in association with some user
+                             #
+  date: t                    # Log time as Date object
+  timestamp: (+t).toString() # Date object as string
+  level: level               # Log level
+  message: message           # Passed message
+  additional: data           # Passed object
+```
 
 ##### Activate and set adapter settings [`Server` & `Client`]
 ```javascript
