@@ -30,14 +30,14 @@ Meteor.log._(message, data, userId); //--> Shortcut for logging without message,
 All logs will be available in `ostrioMongoLogger` collection, as next object:
 ```coffeescript
 doc =
-  userId: userId             # UserID if Log was submitted
+  userId: String             # UserID if Log was submitted
                              # in association with some user
                              #
-  date: t                    # Log time as Date object
-  timestamp: (+t).toString() # Date object as string
-  level: level               # Log level
-  message: message           # Passed message
-  additional: data           # Passed object
+  date: Date                 # Log time as Date object
+  timestamp: String          # Date object as string - (+t).toString()
+  level: String              # Log level
+  message: String            # Passed message
+  additional: Object         # Passed object
 ```
 
 ##### Activate and set adapter settings [`Server` & `Client`]
