@@ -1,6 +1,6 @@
 Changelog
 =========
- - [[`v1.0.0`](https://github.com/VeliovGroup/Meteor-logger-mongo/releases/tag/v1.0.0))] *07/01/2015*
+ - [[`v1.0.0`](https://github.com/VeliovGroup/Meteor-logger-mongo/releases/tag/v1.0.0)] *07/01/2015*
    - Deps packages update see [ostrio:logger@1.0.0](https://github.com/VeliovGroup/Meteor-logger/releases/tag/v1.0.0)
  - [[`v0.0.9`](https://github.com/VeliovGroup/Meteor-logger-mongo/releases/tag/v0.0.9)] *06/07/2015*
    - Deps packages update
