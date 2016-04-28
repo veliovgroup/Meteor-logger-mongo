@@ -1,8 +1,8 @@
 Logging: To MongoDB
 ========
-Store application logs into MongoDB within [ostrio:logger](https://atmospherejs.com/ostrio/logger) package.
+Store application log messages in MongoDB.
 
-*Whenever you log message(s) on client or sever, it goes directly to MongoDB.*
+*Whenever you log message(s) on Client or Sever, it goes directly into MongoDB.*
 
 Installation:
 ========
@@ -10,6 +10,13 @@ Installation:
 meteor add ostrio:logger # If not yet installed
 meteor add ostrio:loggermongo
 ```
+
+Support this awesome package:
+========
+ - Star on [GitHub](https://github.com/VeliovGroup/Meteor-logger-mongo)
+ - Star on [Atmosphere](https://atmospherejs.com/ostrio/loggermongo)
+ - [Tweet](https://twitter.com/share?url=https://github.com/VeliovGroup/Meteor-logger-mongo&text=Store%20%23meteorjs%20log%20messages%20(from%20Client%20%26%20Server)%20in%20MongoDB%20%23javascript%20%23programming%20%23webdev%20via%20%40VeliovGroup)
+ - Share on [Facebook](https://www.facebook.com/sharer.php?u=https://github.com/VeliovGroup/Meteor-logger-mongo)
 
 Usage
 ========
@@ -21,16 +28,19 @@ Usage
 
 Example:
 ```javascript
-this.Log = new Logger();
-var LogMongo = new LoggerMongo(Log, {
+this.log = new Logger(); // Initialize Logger
+// Initialize LoggerMongo:
+var LogMongo = new LoggerMongo(log, {
   collectionName: 'AppLogs' /* Use custom collection name */
 });
+
+LogMongo.enable(); // Enable LoggerMongo with default settings
 ```
 
-##### Activate and set adapter settings [*Isomorphic*]
+##### Activate and set adapter settings: [*Isomorphic*]
 ```javascript
-this.Log = new Logger();
-new LoggerMongo(Log, {}).enable({
+this.log = new Logger();
+new LoggerMongo(log, {}).enable({
   enable: true,
   filter: ['ERROR', 'FATAL', 'WARN'], /* Filters: 'ERROR', 'FATAL', 'WARN', 'DEBUG', 'INFO', 'TRACE', '*' */
   client: false, /* This allows to call, but not execute on Client */
@@ -65,8 +75,8 @@ new LoggerMongo(Log, {}).enable({
 ##### Set custom indexes on collection:
 Read more at: [ensureIndex docs](https://docs.mongodb.org/manual/reference/method/db.collection.ensureIndex/)
 ```javascript
-this.Log = new Logger();
-var LogMongo = new LoggerMongo(Log, {
+this.log = new Logger();
+var LogMongo = new LoggerMongo(log, {
   collectionName: 'AppLogs' /* Use custom collection name */
 });
 
@@ -78,38 +88,51 @@ if (Meteor.isServer) {
 }
 ```
 
-##### Log [*Isomorphic*]
+##### Log message: [*Isomorphic*]
 ```javascript
-this.Log = new Logger();
-new LoggerMongo(Log).enable();
+this.log = new Logger();
+new LoggerMongo(log).enable();
 
 /*
   message {String} - Any text message
   data    {Object} - [optional] Any additional info as object
   userId  {String} - [optional] Current user id
  */
-Log.info(message, data, userId);
-Log.debug(message, data, userId);
-Log.error(message, data, userId);
-Log.fatal(message, data, userId);
-Log.warn(message, data, userId);
-Log.trace(message, data, userId);
-Log._(message, data, userId); //--> Shortcut for logging without message, e.g.: simple plain log
+log.info(message, data, userId);
+log.debug(message, data, userId);
+log.error(message, data, userId);
+log.fatal(message, data, userId);
+log.warn(message, data, userId);
+log.trace(message, data, userId);
+log._(message, data, userId); //--> Plain log without level
 
 /* Use with throw */
-throw Log.error(message, data, userId);
+throw log.error(message, data, userId);
+```
+
+##### Catch-all Client's errors example: [*CLIENT*]
+```javascript
+/* Store original window.onerror */
+var _WoE = window.onerror;
+
+window.onerror = function(msg, url, line) {
+  log.error(msg, {file: url, onLine: line});
+  if (_WoE) {
+    _WoE.apply(this, arguments);
+  }
+};
 ```
 
 ##### Use multiple logger(s) with different settings:
 ```javascript
-this.Log1 = new Logger();
-this.Log2 = new Logger();
+this.log1 = new Logger();
+this.log2 = new Logger();
 
 /* 
  * Separate settings and collection
  * for info, debug and other messages
  */
-new LoggerMongo(Log1, {
+new LoggerMongo(log1, {
   collectionName: 'AppLogs'
 }).enable({
   filter: ['DEBUG', 'INFO', 'LOG', 'TRACE'],
@@ -121,7 +144,7 @@ new LoggerMongo(Log1, {
  * Separate settings and collection
  * for errors, exceptions, warnings and etc.
  */
-new LoggerMongo(Log2, {
+new LoggerMongo(log2, {
   collectionName: 'AppErrors'
 }).enable({
   filter: ['ERROR', 'FATAL', 'WARN'],

@@ -1,7 +1,7 @@
 Package.describe({
   name: 'ostrio:loggermongo',
-  version: '1.1.0',
-  summary: 'Logging: Store application logs in MongoDB',
+  version: '1.1.1',
+  summary: 'Logging: Store application log messages into MongoDB (Server & Client support)',
   git: 'https://github.com/VeliovGroup/Meteor-logger-mongo',
   documentation: 'README.md'
 });
@@ -9,7 +9,7 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.0');
   api.use('mongo', 'server');
-  api.use(['ostrio:logger@1.1.0', 'coffeescript'], ['client', 'server']);
+  api.use(['ostrio:logger@1.1.1', 'coffeescript', 'check', 'underscore'], ['client', 'server']);
   api.addFiles('loggermongo.coffee', ['client', 'server']);
   api.export('LoggerMongo');
 });
