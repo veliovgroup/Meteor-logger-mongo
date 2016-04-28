@@ -1,5 +1,9 @@
 NOOP = -> return
 
+###
+@class LoggerMongo
+@summary MongoDB adapter for ostrio:logger (Logger)
+###
 class LoggerMongo
   constructor: (@logger, @options = {}) ->
     check @logger, Match.OneOf Logger, Object
