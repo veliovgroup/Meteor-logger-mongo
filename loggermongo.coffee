@@ -10,10 +10,13 @@ class LoggerMongo
     check @options, {
       collectionName: Match.Optional String
       collection: Match.Optional Match.OneOf Mongo.Collection, Object
+      format: Match.Optional Function
     }
 
     if not @options.collectionName and not @options.collection
       throw new Meteor.Error 400, '[LoggerMongo]: `collectionName` or `collection` must be presented'
+
+    @options.format ?= (opts) -> return opts
 
     self = @
     if Meteor.isServer
@@ -35,14 +38,18 @@ class LoggerMongo
           if _.isString data.stackTrace
             data.stackTrace = data.stackTrace.split /\n|\\n|\r|\r\n/g
 
-        self.collection.insert {
+        record = self.options.format
           userId: userId
           date: time
           timestamp: +time
           level: level
           message: message
           additional: data
-        }, NOOP
+
+        unless _.isObject record
+          throw new Meteor.Error(400, "[ostrio:logger] [options.format]: Must return a plain Object!", record) 
+
+        self.collection.insert record, NOOP
     , NOOP
     , true
 
