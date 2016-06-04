@@ -24,6 +24,14 @@ Usage
 `new LoggerMongo(LoggerInstance, options)`
  - `LoggerInstance` {*Logger*} - from `new Logger()`
  - `options` {*Object*}
+ - `options.format` {*Function*} - Must return plain object, which will be used as log-record. Arguments:
+  * `opts` {*Object*}
+  * `opts.userId` {*String*}
+  * `opts.date` {*Date*} - Report date
+  * `opts.timestamp` {*Number*} - Report timestamp in milliseconds
+  * `opts.level` {*String*} - Message level, one of: `ERROR`, `FATAL`, `WARN`, `DEBUG`, `INFO`, `TRACE`, `*`
+  * `opts.message` {*String*} - Report message
+  * `opts.additional` {*Object*} - Additional info passed as object
  - `options.collection` {*Mongo.Collection*} - Use to pass your own MongoDB collection instance, {*[Mongo.Collection](Mongo.Collection)*} returned from `new Mongo.Collection()`
  - `options.collectionName` {*String*} - MongoDB collection name, default: `ostrioMongoLogger`
  - __Note__: *You can't pass both* `collection` *and* `collectionName` *simultaneously. Set only one of those options.* If both options is presented `collection` is more prioritized
