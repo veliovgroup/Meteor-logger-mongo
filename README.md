@@ -1,14 +1,28 @@
 Logging: To MongoDB
 ========
-Store application log messages in MongoDB.
+*MongoDB* adapter for [logger driver](https://github.com/VeliovGroup/Meteor-logger). Store application's logs and messages in MongoDB.
 
 *Whenever you log message(s) on Client or Sever, it goes directly into MongoDB.*
+
+Features:
+ - 100% tests coverage;
+ - Flexible log level filters;
+ - `userId` is automatically passed and logged if logs is associated with logged-in user;
+ - Pass logs from *Client* to MongoDB on *Server*;
+ - Catch all browser's errors.
 
 Installation:
 ========
 ```shell
 meteor add ostrio:logger # If not yet installed
 meteor add ostrio:loggermongo
+```
+
+ES6 Import:
+========
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 ```
 
 Support this awesome package:
@@ -20,40 +34,45 @@ Support this awesome package:
 
 Usage
 ========
-##### Initialization [*Isomorphic*]
+### Initialization [*Isomorphic*]
 `new LoggerMongo(LoggerInstance, options)`
- - `LoggerInstance` {*Logger*} - from `new Logger()`
- - `options` {*Object*}
- - `options.format` {*Function*} - Must return plain object, which will be used as log-record. Arguments:
-  * `opts` {*Object*}
-  * `opts.userId` {*String*}
-  * `opts.date` {*Date*} - Report date
-  * `opts.timestamp` {*Number*} - Report timestamp in milliseconds
-  * `opts.level` {*String*} - Message level, one of: `ERROR`, `FATAL`, `WARN`, `DEBUG`, `INFO`, `TRACE`, `*`
-  * `opts.message` {*String*} - Report message
-  * `opts.additional` {*Object*} - Additional info passed as object
- - `options.collection` {*Mongo.Collection*} - Use to pass your own MongoDB collection instance, {*[Mongo.Collection](Mongo.Collection)*} returned from `new Mongo.Collection()`
- - `options.collectionName` {*String*} - MongoDB collection name, default: `ostrioMongoLogger`
- - __Note__: *You can't pass both* `collection` *and* `collectionName` *simultaneously. Set only one of those options.* If both options is presented `collection` is more prioritized
- - __Note__: If `collectionName` or no arguments is passed, `update`, `remove`, `insert` is disallowed on the Client
+  - `LoggerInstance` {*Logger*} - from `new Logger()`
+  - `options` {*Object*}
+  - `options.format` {*Function*} - Must return plain object, which will be used as log-record. Arguments:
+    * `opts` {*Object*}
+    * `opts.userId` {*String*}
+    * `opts.date` {*Date*} - Report date
+    * `opts.timestamp` {*Number*} - Report timestamp in milliseconds
+    * `opts.level` {*String*} - Message level, one of: `ERROR`, `FATAL`, `WARN`, `DEBUG`, `INFO`, `TRACE`, `*`
+    * `opts.message` {*String*} - Report message
+    * `opts.additional` {*Object*} - Additional info passed as object
+  - `options.collection` {*Mongo.Collection*} - Use to pass your own MongoDB collection instance, {*[Mongo.Collection](https://docs.meteor.com/api/collections.html#Mongo-Collection)*} returned from `new Mongo.Collection()`
+  - `options.collectionName` {*String*} - MongoDB collection name, default: `ostrioMongoLogger`
+  - __Note__: *You can't pass both* `collection` *and* `collectionName` *simultaneously. Set only one of those options.* If both options is presented `collection` is more prioritized
 
-Example:
-```javascript
+#### Example:
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
 // Initialize Logger:
-this.log = new Logger();
+const log = new Logger();
 
-// Initialize LoggerMongo and enable with default settings:
+// Initialize and enable LoggerMongo with default settings:
 (new LoggerMongo(log)).enable();
 ```
 
-Example 2:
-```javascript
-// Initialize Logger:
-this.log = new Logger();
-var AppLogs = new Mongo.Collection('AppLogs');
+#### Example 2:
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
-// Initialize LoggerMongo with own collection instance:
-var LogMongo = new LoggerMongo(log, {
+// Initialize Logger:
+const log = new Logger();
+const AppLogs = new Mongo.Collection('AppLogs');
+
+// Initialize LoggerMongo with collection instance:
+const LogMongo = new LoggerMongo(log, {
   collection: AppLogs
 });
 
@@ -61,13 +80,16 @@ var LogMongo = new LoggerMongo(log, {
 LogMongo.enable();
 ```
 
-Example 3:
-```javascript
+#### Example 3:
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
 // Initialize Logger:
-this.log = new Logger();
+const log = new Logger();
 
 // Initialize LoggerMongo with custom collection name:
-var LogMongo = new LoggerMongo(log, {
+const LogMongo = new LoggerMongo(log, {
   collectionName: 'AppLogs'
 });
 
@@ -75,18 +97,21 @@ var LogMongo = new LoggerMongo(log, {
 LogMongo.enable();
 ```
 
-##### Activate with custom adapter settings: [*Isomorphic*]
-```javascript
-this.log = new Logger();
-(new LoggerMongo(log, {})).enable({
+### Activate with custom adapter settings: [*Isomorphic*]
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
+const log = new Logger();
+(new LoggerMongo(log)).enable({
   enable: true,
-  filter: ['ERROR', 'FATAL', 'WARN'], /* Filters: 'ERROR', 'FATAL', 'WARN', 'DEBUG', 'INFO', 'TRACE', '*' */
-  client: false, /* This allows to call, but not execute on Client */
-  server: true   /* Calls from client will be executed on Server */
+  filter: ['ERROR', 'FATAL', 'WARN'], // Filters: 'ERROR', 'FATAL', 'WARN', 'DEBUG', 'INFO', 'TRACE', '*'
+  client: true, // Set to `false` to avoid Client to Server logs transfer
+  server: true  // Allow logging on Server
 });
 ```
 
-##### Logging Collection Schema:
+### Logging Collection Schema:
 ```javascript
 ({
   userId: {
@@ -110,12 +135,15 @@ this.log = new Logger();
 });
 ```
 
-##### Set custom indexes on collection: [*Server*]
+### Set custom indexes on collection: [*Server*]
 Read more at: [ensureIndex docs](https://docs.mongodb.org/manual/reference/method/db.collection.ensureIndex/)
-```javascript
-this.log = new Logger();
-var LogMongo = new LoggerMongo(log, {
-  collectionName: 'AppLogs' /* Use custom collection name */
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
+const log = new Logger();
+const LogMongo = new LoggerMongo(log, {
+  collectionName: 'AppLogs' // Use custom collection name
 });
 
 if (Meteor.isServer) {
@@ -126,9 +154,12 @@ if (Meteor.isServer) {
 }
 ```
 
-##### Log message: [*Isomorphic*]
-```javascript
-this.log = new Logger();
+### Log message: [*Isomorphic*]
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
+const log = new Logger();
 (new LoggerMongo(log)).enable();
 
 /*
@@ -142,29 +173,32 @@ log.error(message, data, userId);
 log.fatal(message, data, userId);
 log.warn(message, data, userId);
 log.trace(message, data, userId);
-log._(message, data, userId); //--> Plain log without level
+log._(message, data, userId); // Shortcut
 
-/* Use with throw */
+// Use with throw
 throw log.error(message, data, userId);
 ```
 
-##### Catch-all Client's errors example: [*Client*]
+### Catch-all Client's errors example: [*Client*]
 ```javascript
 /* Store original window.onerror */
-var _WoE = window.onerror;
+const _GlobalErrorHandler = window.onerror;
 
-window.onerror = function(msg, url, line) {
+window.onerror = (msg, url, line) => {
   log.error(msg, {file: url, onLine: line});
-  if (_WoE) {
-    _WoE.apply(this, arguments);
+  if (_GlobalErrorHandler) {
+    _GlobalErrorHandler.apply(this, arguments);
   }
 };
 ```
 
-##### Use multiple logger(s) with different settings: [*Isomorphic*]
-```javascript
-this.log1 = new Logger();
-this.log2 = new Logger();
+### Use multiple logger(s) with different settings: [*Isomorphic*]
+```jsx
+import { Logger }      from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
+
+const log1 = new Logger();
+const log2 = new Logger();
 
 /* 
  * Separate settings and collection
@@ -174,7 +208,7 @@ this.log2 = new Logger();
   collectionName: 'AppLogs'
 })).enable({
   filter: ['DEBUG', 'INFO', 'LOG', 'TRACE'],
-  client: false,
+  client: true,
   server: true
 });
 
@@ -186,7 +220,7 @@ this.log2 = new Logger();
   collectionName: 'AppErrors'
 })).enable({
   filter: ['ERROR', 'FATAL', 'WARN'],
-  client: false,
+  client: true,
   server: true
 });
 ```
