@@ -147,6 +147,8 @@ const LogMongo = new LoggerMongo(log, {
 });
 
 if (Meteor.isServer) {
+  // PRECAUTION: make sure you understand what you're doing and why
+  // Do not ever blindly copy-paste, see: https://github.com/VeliovGroup/Meteor-logger-mongo/issues/19
   LogMongo.collection._ensureIndex({level: 1}, {background: true});
   LogMongo.collection._ensureIndex({userId: 1}, {background: true});
   LogMongo.collection._ensureIndex({date: 1}, {background: true});
