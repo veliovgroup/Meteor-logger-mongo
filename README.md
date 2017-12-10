@@ -193,10 +193,13 @@ window.onerror = (msg, url, line) => {
 ```
 ### Catch-all Server's errors example: [*Server*]
 ```jsx
+const bound = Meteor.bindEnvironment((callback) => {callback();});
 process.on('uncaughtException', function (err) {
-  log.error("Server Crashed!", err);
-  console.error(err.stack);
-  process.exit(7);
+  bound(() => {
+    log.error("Server Crashed!", err);
+    console.error(err.stack);
+    process.exit(7);
+  });
 };
 ```
 ### Catch-all Meteor's errors example: [*Server*]
@@ -208,7 +211,6 @@ Meteor._debug =(message, stack) => {
   error.stack = stack;
   log.error('Meteor Error!', error);
   return originalMeteorDebug.apply(this, arguments);
-  };
 };
 ```
 
