@@ -11,29 +11,19 @@ Features:
  - Pass logs from *Client* to MongoDB on *Server*;
  - Catch all browser's errors.
 
-Installation:
-========
+## Installation:
 ```shell
 meteor add ostrio:logger # If not yet installed
 meteor add ostrio:loggermongo
 ```
 
-ES6 Import:
-========
+## ES6 Import:
 ```jsx
 import { Logger }      from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 ```
 
-Support this awesome package:
-========
- - Star on [GitHub](https://github.com/VeliovGroup/Meteor-logger-mongo)
- - Star on [Atmosphere](https://atmospherejs.com/ostrio/loggermongo)
- - [Tweet](https://twitter.com/share?url=https://github.com/VeliovGroup/Meteor-logger-mongo&text=Store%20%23meteorjs%20log%20messages%20(from%20Client%20%26%20Server)%20in%20MongoDB%20%23javascript%20%23programming%20%23webdev%20via%20%40VeliovGroup)
- - Share on [Facebook](https://www.facebook.com/sharer.php?u=https://github.com/VeliovGroup/Meteor-logger-mongo)
-
-Usage
-========
+## Usage
 ### Initialization [*Isomorphic*]
 `new LoggerMongo(LoggerInstance, options)`
   - `LoggerInstance` {*Logger*} - from `new Logger()`
@@ -193,6 +183,7 @@ window.onerror = (msg, url, line) => {
   }
 };
 ```
+
 ### Catch-all Server's errors example: [*Server*]
 ```jsx
 const bound = Meteor.bindEnvironment((callback) => {callback();});
@@ -204,6 +195,7 @@ process.on('uncaughtException', function (err) {
   });
 };
 ```
+
 ### Catch-all Meteor's errors example: [*Server*]
 ```jsx
 // store original Meteor error
@@ -249,8 +241,13 @@ const log2 = new Logger();
 });
 ```
 
-Support this project:
-========
+## Support this awesome package:
+ - Star on [GitHub](https://github.com/VeliovGroup/Meteor-logger-mongo)
+ - Star on [Atmosphere](https://atmospherejs.com/ostrio/loggermongo)
+ - [Tweet](https://twitter.com/share?url=https://github.com/VeliovGroup/Meteor-logger-mongo&text=Store%20%23meteorjs%20log%20messages%20(from%20Client%20%26%20Server)%20in%20MongoDB%20%23javascript%20%23programming%20%23webdev%20via%20%40VeliovGroup)
+ - Share on [Facebook](https://www.facebook.com/sharer.php?u=https://github.com/VeliovGroup/Meteor-logger-mongo)
+
+## Support this project:
 This project can't be possible without [ostr.io](https://ostr.io).
 
 By using [ostr.io](https://ostr.io) you are not only [protecting domain names](https://ostr.io/info/domain-names-protection), [monitoring websites and servers](https://ostr.io/info/monitoring), using [Prerendering for better SEO](https://ostr.io/info/prerendering) of your JavaScript website, but support our Open Source activity, and great packages like this one are available for free.
