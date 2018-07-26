@@ -1,9 +1,26 @@
-import { _ }            from 'meteor/underscore';
 import { Mongo }        from 'meteor/mongo';
 import { Meteor }       from 'meteor/meteor';
 import { Logger }       from 'meteor/ostrio:logger';
 import { check, Match } from 'meteor/check';
 const NOOP = () => {};
+
+const helpers = {
+  isObject(obj) {
+    if (this.isArray(obj) || this.isFunction(obj)) {
+      return false;
+    }
+    return obj === Object(obj);
+  },
+  isArray(obj) {
+    return Array.isArray(obj);
+  },
+  isFunction(obj) {
+    return typeof obj === 'function' || false;
+  },
+  isString(obj) {
+    return Object.prototype.toString.call(obj) === '[object String]';
+  }
+};
 
 /*
  * @class LoggerMongo
@@ -50,12 +67,13 @@ class LoggerMongo {
       }
     }
 
-    this.logger.add('Mongo', (level, message, data = null, userId) => {
+    this.logger.add('Mongo', (level, message, _data = null, userId) => {
       if (Meteor.isServer) {
         const time = new Date();
+        let data   = _data;
         if (data) {
           data = this.logger.antiCircular(data);
-          if (_.isString(data.stackTrace)) {
+          if (helpers.isString(data.stackTrace)) {
             data.stackTrace = data.stackTrace.split(/\n|\\n|\r|\r\n/g);
           }
         }
@@ -69,7 +87,7 @@ class LoggerMongo {
           additional: data,
         });
 
-        if (!_.isObject(record)) {
+        if (!helpers.isObject(record)) {
           throw new Meteor.Error(400, '[ostrio:logger] [options.format]: Must return a plain Object!', record);
         }
 
