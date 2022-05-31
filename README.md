@@ -1,8 +1,10 @@
-# Logging: To MongoDB
-
-<a href="https://www.patreon.com/bePatron?u=20396046">
-  <img src="https://c5.patreon.com/external/logo/become_a_patron_button@2x.png" width="160">
+[![support](https://img.shields.io/badge/support-GitHub-white)](https://github.com/sponsors/dr-dimitru)
+[![support](https://img.shields.io/badge/support-PayPal-white)](https://paypal.me/veliovgroup)
+<a href="https://ostr.io/info/built-by-developers-for-developers">
+  <img src="https://ostr.io/apple-touch-icon-60x60.png" height="20">
 </a>
+
+# Logging: To MongoDB
 
 *MongoDB* adapter for [logger driver](https://github.com/VeliovGroup/Meteor-logger). Store application's logs and messages in MongoDB.
 
@@ -26,7 +28,7 @@ meteor add ostrio:loggermongo
 ## ES6 Import:
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 ```
 
@@ -53,7 +55,7 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 #### Example:
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 // Initialize Logger:
@@ -66,7 +68,7 @@ const log = new Logger();
 #### Example 2:
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 // Initialize Logger:
@@ -85,7 +87,7 @@ LogMongo.enable();
 #### Example 3:
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 // Initialize Logger:
@@ -103,7 +105,7 @@ LogMongo.enable();
 #### Initialize with custom adapter settings: [*Isomorphic*]
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const log = new Logger();
@@ -145,7 +147,7 @@ const log = new Logger();
 Read more at: [ensureIndex docs](https://docs.mongodb.org/manual/reference/method/db.collection.ensureIndex/)
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const log = new Logger();
@@ -166,7 +168,7 @@ if (Meteor.isServer) {
 ### Log message: [*Isomorphic*]
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const log = new Logger();
@@ -284,5 +286,6 @@ meteor test-packages ./
 
 ## Support our open source contribution:
 
-- [Become a patron](https://www.patreon.com/bePatron?u=20396046) — support my open source contributions with monthly donation
+- [Sponsor via GitHub](https://github.com/sponsors/dr-dimitru)
+- [Support via PayPal](https://paypal.me/veliovgroup)
 - Use [ostr.io](https://ostr.io) — [Monitoring](https://snmp-monitoring.com), [Analytics](https://ostr.io/info/web-analytics), [WebSec](https://domain-protection.info), [Web-CRON](https://web-cron.info) and [Pre-rendering](https://prerendering.com) for a website
