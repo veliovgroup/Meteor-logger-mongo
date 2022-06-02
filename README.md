@@ -34,12 +34,16 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 ## Usage
 
+Initialize `Logger` instance and pass it into `LoggerMongo` constructor to enable logging into the log file.
+
 ### Initialization [*Isomorphic*]
 
 `new LoggerMongo(LoggerInstance, options)`
 
 - `LoggerInstance` {*Logger*} - from `new Logger()`
 - `options` {*Object*}
+- `options.collection` {*Mongo.Collection*} - Use to pass your own MongoDB collection instance, {*[Mongo.Collection](https://docs.meteor.com/api/collections.html#Mongo-Collection)*} returned from `new Mongo.Collection()`
+- `options.collectionName` {*String*} - MongoDB collection name, default: `ostrioMongoLogger`
 - `options.format` {*Function*} - Must return plain object, which will be used as log-record. Arguments:
   - `opts` {*Object*}
   - `opts.userId` {*String*}
@@ -48,9 +52,8 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
   - `opts.level` {*String*} - Message level, one of: `ERROR`, `FATAL`, `WARN`, `DEBUG`, `INFO`, `TRACE`, `*`
   - `opts.message` {*String*} - Report message
   - `opts.additional` {*Object*} - Additional info passed as object
-- `options.collection` {*Mongo.Collection*} - Use to pass your own MongoDB collection instance, {*[Mongo.Collection](https://docs.meteor.com/api/collections.html#Mongo-Collection)*} returned from `new Mongo.Collection()`
-- `options.collectionName` {*String*} - MongoDB collection name, default: `ostrioMongoLogger`
-- __Note__: *You can't pass both* `collection` *and* `collectionName` *simultaneously. Set only one of those options.* If both options is presented `collection` is more prioritized
+
+__Note__: *You can't pass both* `collection` *and* `collectionName` *simultaneously. Set only one of those options.* If both options is presented `collection` is more prioritized
 
 #### Example:
 
@@ -73,15 +76,15 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 // Initialize Logger:
 const log = new Logger();
-const AppLogs = new Mongo.Collection('AppLogs');
+const appLogs = new Mongo.Collection('AppLogs');
 
 // Initialize LoggerMongo with collection instance:
-const LogMongo = new LoggerMongo(log, {
-  collection: AppLogs
+const logMongo = new LoggerMongo(log, {
+  collection: appLogs
 });
 
 // Enable LoggerMongo with default settings:
-LogMongo.enable();
+logMongo.enable();
 ```
 
 #### Example 3:
@@ -94,12 +97,12 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 const log = new Logger();
 
 // Initialize LoggerMongo with custom collection name:
-const LogMongo = new LoggerMongo(log, {
-  collectionName: 'AppLogs'
+const logMongo = new LoggerMongo(log, {
+  collectionName: 'appLogs'
 });
 
 // Enable LoggerMongo with default settings:
-LogMongo.enable();
+logMongo.enable();
 ```
 
 #### Initialize with custom adapter settings: [*Isomorphic*]
@@ -136,8 +139,8 @@ const log = new Logger();
   message: {
     type: String
   },
-  additional: {
-    type: Object
+  additional: {    // <- passed object into 'data' argument
+    type: Object   // upon logging will be available for search
   }
 });
 ```
