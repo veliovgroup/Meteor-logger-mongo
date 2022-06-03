@@ -6,7 +6,7 @@
 
 # Logging: To MongoDB
 
-*MongoDB* adapter for [logger driver](https://github.com/VeliovGroup/Meteor-logger). Store application's logs and messages in MongoDB.
+*MongoDB* adapter for [logger driver](https://github.com/veliovgroup/Meteor-logger). Store application's logs and messages in MongoDB.
 
 *Whenever you log message(s) on Client or Sever, it goes directly into MongoDB.*
 
@@ -160,7 +160,7 @@ const logMongo = new LoggerMongo(log, {
 
 if (Meteor.isServer) {
   // PRECAUTION: make sure you understand what you're doing and why
-  // Do not ever blindly copy-paste, see: https://github.com/VeliovGroup/Meteor-logger-mongo/issues/19
+  // Do not ever blindly copy-paste, see: https://github.com/veliovgroup/Meteor-logger-mongo/issues/19
   logMongo.collection._ensureIndex({level: 1}, {background: true});
   logMongo.collection._ensureIndex({userId: 1}, {background: true});
   logMongo.collection._ensureIndex({date: 1}, {background: true});
@@ -282,10 +282,10 @@ meteor test-packages ./
 
 ## Support this awesome package:
 
-- Star on [GitHub](https://github.com/VeliovGroup/Meteor-logger-mongo)
+- Star on [GitHub](https://github.com/veliovgroup/Meteor-logger-mongo)
 - Star on [Atmosphere](https://atmospherejs.com/ostrio/loggermongo)
-- [Tweet](https://twitter.com/share?url=https://github.com/VeliovGroup/Meteor-logger-mongo&text=Store%20%23meteorjs%20log%20messages%20in%20MongoDB%20%23javascript%20%23programming%20%23webdev%20via%20%40VeliovGroup)
-- Share on [Facebook](https://www.facebook.com/sharer.php?u=https://github.com/VeliovGroup/Meteor-logger-mongo)
+- [Tweet](https://twitter.com/share?url=https://github.com/veliovgroup/Meteor-logger-mongo&text=Store%20%23meteorjs%20log%20messages%20in%20MongoDB%20%23javascript%20%23programming%20%23webdev%20via%20%40veliovgroup)
+- Share on [Facebook](https://www.facebook.com/sharer.php?u=https://github.com/veliovgroup/Meteor-logger-mongo)
 
 ## Support our open source contribution:
 
