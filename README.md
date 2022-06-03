@@ -76,7 +76,7 @@ import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 // Initialize Logger:
 const log = new Logger();
-const appLogs = new Mongo.Collection('AppLogs');
+const appLogs = new Mongo.Collection('appLogs');
 
 // Initialize LoggerMongo with collection instance:
 const logMongo = new LoggerMongo(log, {
@@ -139,8 +139,8 @@ const log = new Logger();
   message: {
     type: String
   },
-  additional: {    // <- passed object into 'data' argument
-    type: Object   // upon logging will be available for search
+  additional: {  // <- passed object into 'data' argument
+    type: Object // upon logging will be available for search
   }
 });
 ```
@@ -154,17 +154,17 @@ import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const log = new Logger();
-const LogMongo = new LoggerMongo(log, {
-  collectionName: 'AppLogs' // Use custom collection name
+const logMongo = new LoggerMongo(log, {
+  collectionName: 'appLogs' // Use custom collection name
 });
 
 if (Meteor.isServer) {
   // PRECAUTION: make sure you understand what you're doing and why
   // Do not ever blindly copy-paste, see: https://github.com/VeliovGroup/Meteor-logger-mongo/issues/19
-  LogMongo.collection._ensureIndex({level: 1}, {background: true});
-  LogMongo.collection._ensureIndex({userId: 1}, {background: true});
-  LogMongo.collection._ensureIndex({date: 1}, {background: true});
-  LogMongo.collection._ensureIndex({timestamp: 1}, {background: true});
+  logMongo.collection._ensureIndex({level: 1}, {background: true});
+  logMongo.collection._ensureIndex({userId: 1}, {background: true});
+  logMongo.collection._ensureIndex({date: 1}, {background: true});
+  logMongo.collection._ensureIndex({timestamp: 1}, {background: true});
 }
 ```
 
@@ -237,7 +237,7 @@ Meteor._debug = function (message, stack) {
 ### Use multiple logger(s) with different settings: [*Isomorphic*]
 
 ```js
-import { Logger }      from 'meteor/ostrio:logger';
+import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const log1 = new Logger();
@@ -248,7 +248,7 @@ const log2 = new Logger();
  * for info, debug and other messages
  */
 (new LoggerMongo(log1, {
-  collectionName: 'AppLogs'
+  collectionName: 'appLogs'
 })).enable({
   filter: ['DEBUG', 'INFO', 'LOG', 'TRACE'],
   client: true,
