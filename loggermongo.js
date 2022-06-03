@@ -1,8 +1,8 @@
-import { Mongo }        from 'meteor/mongo';
-import { Meteor }       from 'meteor/meteor';
-import { Logger }       from 'meteor/ostrio:logger';
+import { Mongo } from 'meteor/mongo';
+import { Meteor } from 'meteor/meteor';
+import { Logger } from 'meteor/ostrio:logger';
 import { check, Match } from 'meteor/check';
-const NOOP = () => {};
+const noop = () => {};
 
 const helpers = {
   isObject(obj) {
@@ -15,7 +15,7 @@ const helpers = {
     return Array.isArray(obj);
   },
   isFunction(obj) {
-    return typeof obj === 'function' || false;
+    return typeof obj === 'function';
   },
   isString(obj) {
     return Object.prototype.toString.call(obj) === '[object String]';
@@ -36,13 +36,13 @@ class LoggerMongo {
     });
 
     this.logger = logger;
-    this.options = options;
-
-    if (!this.options.format) {
-      this.options.format = (opts) => {
+    if (!helpers.isFunction(options.format)) {
+      options.format = (opts) => {
         return opts;
       };
     }
+
+    this.options = options;
 
     if (Meteor.isServer) {
       if (this.options.collection) {
@@ -71,7 +71,7 @@ class LoggerMongo {
       if (Meteor.isServer) {
         const time = new Date();
 
-        const record = this.options.format({
+        const record = options.format({
           userId: userId,
           date: time,
           timestamp: +time,
@@ -84,9 +84,9 @@ class LoggerMongo {
           throw new Meteor.Error(400, '[ostrio:logger] [options.format]: Must return a plain Object!', record);
         }
 
-        this.collection.insert(record, NOOP);
+        this.collection.insert(record, noop);
       }
-    }, NOOP, false, false);
+    }, noop, false, false);
   }
 
   enable(rule = {}) {
