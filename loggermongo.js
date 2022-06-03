@@ -22,7 +22,7 @@ const helpers = {
   }
 };
 
-/*
+/**
  * @class LoggerMongo
  * @summary MongoDB adapter for ostrio:logger (Logger)
  */
@@ -35,7 +35,7 @@ class LoggerMongo {
       format: Match.Optional(Function)
     });
 
-    this.logger  = logger;
+    this.logger = logger;
     this.options = options;
 
     if (!this.options.format) {
@@ -67,16 +67,9 @@ class LoggerMongo {
       }
     }
 
-    this.logger.add('Mongo', (level, message, _data = null, userId) => {
+    this.logger.add('Mongo', (level, message, data, userId) => {
       if (Meteor.isServer) {
         const time = new Date();
-        let data   = _data;
-        if (data) {
-          data = this.logger.antiCircular(data);
-          if (helpers.isString(data.stackTrace)) {
-            data.stackTrace = data.stackTrace.split(/\n|\\n|\r|\r\n/g);
-          }
-        }
 
         const record = this.options.format({
           userId: userId,
@@ -84,7 +77,7 @@ class LoggerMongo {
           timestamp: +time,
           level: level,
           message: message,
-          additional: data,
+          additional: data
         });
 
         if (!helpers.isObject(record)) {
@@ -104,15 +97,15 @@ class LoggerMongo {
       filter: Match.Optional([String])
     });
 
-    if (rule.enable == null) {
+    if (typeof rule.enable === 'undefined') {
       rule.enable = true;
     }
 
-    if (rule.client == null) {
+    if (typeof rule.client === 'undefined') {
       rule.client = true;
     }
 
-    if (rule.server == null) {
+    if (typeof rule.server === 'undefined') {
       rule.server = true;
     }
 
