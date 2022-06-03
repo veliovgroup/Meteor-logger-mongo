@@ -1,15 +1,15 @@
 Package.describe({
   name: 'ostrio:loggermongo',
-  version: '2.0.5',
+  version: '2.1.0',
   summary: 'Logging: Store application\'s logs messages in MongoDB (Server & Client support)',
-  git: 'https://github.com/VeliovGroup/Meteor-logger-mongo',
+  git: 'https://github.com/veliovgroup/Meteor-logger-mongo',
   documentation: 'README.md'
 });
 
 Package.onUse((api) => {
   api.versionsFrom('1.4');
   api.use('mongo', 'server');
-  api.use(['mongo', 'ecmascript', 'check', 'ostrio:logger@2.0.8'], ['client', 'server']);
+  api.use(['mongo', 'ecmascript', 'check', 'ostrio:logger@2.1.1'], ['client', 'server']);
   api.mainModule('loggermongo.js', ['client', 'server']);
 });
 
