@@ -1,9 +1,9 @@
-import { _ }                     from 'meteor/underscore';
-import { Meteor }                from 'meteor/meteor';
-import { LoggerMongo }           from 'meteor/ostrio:loggermongo';
+import { _ } from 'meteor/underscore';
+import { Meteor } from 'meteor/meteor';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 import { Logger, LoggerMessage } from 'meteor/ostrio:logger';
 
-const log         = new Logger();
+const log = new Logger();
 const mongoLogger = (new LoggerMongo(log)).enable();
 
 if (Meteor.isServer) {
@@ -49,6 +49,111 @@ Tinytest.add('Log a Number', (test) => {
   test.instanceOf(log._(70, {data: 70}, 70), LoggerMessage);
 });
 
+Tinytest.add('Log a null', (test) => {
+  test.instanceOf(log.info(10, null), LoggerMessage);
+  test.instanceOf(log.debug(20, null), LoggerMessage);
+  test.instanceOf(log.error(30, null), LoggerMessage);
+  test.instanceOf(log.fatal(40, null), LoggerMessage);
+  test.instanceOf(log.warn(50, null), LoggerMessage);
+  test.instanceOf(log.trace(60, null), LoggerMessage);
+  test.instanceOf(log._(70, null), LoggerMessage);
+});
+
+Tinytest.add('Log a Object', (test) => {
+  test.instanceOf(log.info(10, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log.debug(20, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log.error(30, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log.fatal(40, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log.warn(50, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log.trace(60, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+  test.instanceOf(log._(70, {keyNull: null, keyStr: 'str'}), LoggerMessage);
+});
+
+Tinytest.add('Log a String', (test) => {
+  test.instanceOf(log.info(10, 'string value'), LoggerMessage);
+  test.instanceOf(log.debug(20, 'string value'), LoggerMessage);
+  test.instanceOf(log.error(30, 'string value'), LoggerMessage);
+  test.instanceOf(log.fatal(40, 'string value'), LoggerMessage);
+  test.instanceOf(log.warn(50, 'string value'), LoggerMessage);
+  test.instanceOf(log.trace(60, 'string value'), LoggerMessage);
+  test.instanceOf(log._(70, 'string value'), LoggerMessage);
+});
+
+Tinytest.add('Log with wrong arguments', (test) => {
+  test.instanceOf(log.info('info wrong values', false), LoggerMessage);
+  test.instanceOf(log.debug('debug wrong values', true), LoggerMessage);
+  test.instanceOf(log.error('error wrong values', true), LoggerMessage);
+  test.instanceOf(log.fatal('fatal wrong values', false), LoggerMessage);
+  test.instanceOf(log.warn('warn wrong values', undefined), LoggerMessage);
+  test.instanceOf(log.trace('trace wrong values', ''), LoggerMessage);
+  test.instanceOf(log._('_ wrong values', []), LoggerMessage);
+});
+
+Tinytest.add('Log Boolean message', (test) => {
+  test.instanceOf(log.info('info', true), LoggerMessage);
+  test.instanceOf(log.debug('debug', true), LoggerMessage);
+  test.instanceOf(log.error('error', false), LoggerMessage);
+  test.instanceOf(log.fatal('fatal', false), LoggerMessage);
+  test.instanceOf(log.warn('warn', true), LoggerMessage);
+  test.instanceOf(log.trace('trace', true), LoggerMessage);
+  test.instanceOf(log._('_', true), LoggerMessage);
+});
+
+Tinytest.add('Log without message', (test) => {
+  test.instanceOf(log.info(10), LoggerMessage);
+  test.instanceOf(log.debug(20), LoggerMessage);
+  test.instanceOf(log.error(30), LoggerMessage);
+  test.instanceOf(log.fatal(40), LoggerMessage);
+  test.instanceOf(log.warn(50), LoggerMessage);
+  test.instanceOf(log.trace(60), LoggerMessage);
+  test.instanceOf(log._(70), LoggerMessage);
+});
+
+Tinytest.add('Log without arguments', (test) => {
+  test.instanceOf(log.info(), LoggerMessage);
+  test.instanceOf(log.debug(), LoggerMessage);
+  test.instanceOf(log.error(), LoggerMessage);
+  test.instanceOf(log.fatal(), LoggerMessage);
+  test.instanceOf(log.warn(), LoggerMessage);
+  test.instanceOf(log.trace(), LoggerMessage);
+  test.instanceOf(log._(), LoggerMessage);
+});
+
+const dataObj = {
+  time: new Date,
+  subObj: {
+    keyStr: 'str'
+  }
+};
+
+dataObj.subObj.do = dataObj;
+
+Tinytest.addAsync('Log a Circular', (test, done) => {
+  test.instanceOf(log.info('Circular 10', dataObj), LoggerMessage);
+  test.instanceOf(log.debug('Circular 20', dataObj), LoggerMessage);
+  test.instanceOf(log.error('Circular 30', dataObj), LoggerMessage);
+  test.instanceOf(log.fatal('Circular 40', dataObj), LoggerMessage);
+  test.instanceOf(log.warn('Circular 50', dataObj), LoggerMessage);
+  test.instanceOf(log.trace('Circular 60', dataObj), LoggerMessage);
+  test.instanceOf(log._('Circular 70', dataObj), LoggerMessage);
+
+  if (Meteor.isServer) {
+    Meteor.setTimeout(() => {
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 10'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 10'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 20'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 30'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 40'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 50'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 60'}).additional.subObj.do.includes('[Circular]'));
+      test.isTrue(mongoLogger.collection.findOne({message: 'Circular 70'}).additional.subObj.do.includes('[Circular]'));
+      done();
+    }, 256);
+  } else {
+    done();
+  }
+});
+
 Tinytest.add('Trace', (test) => {
   if (Meteor.isServer) {
     test.isTrue(_.has(log.trace(602, {data: 602}, 602).details, 'stackTrace'));
@@ -79,7 +184,7 @@ Tinytest.addAsync('Check written data, without {data} [SERVER]', (test, done) =>
       test.isTrue(!!mongoLogger.collection.findOne({message: 'cwdwods Test "_"'}));
 
       done();
-    }, 1024);
+    }, 256);
   } else {
     test.isTrue(true);
     done();
@@ -113,7 +218,7 @@ Tinytest.addAsync('Check written data, with {data} [SERVER]', (test, done) => {
       test.isTrue(!!mongoLogger.collection.findOne({'additional.data': 'cwdwds Test "_"'}), 'Data test: _');
       test.isTrue(!!mongoLogger.collection.findOne({message: 703}), 'Number test: 70');
       done();
-    }, 1024);
+    }, 256);
   } else {
     test.isTrue(true);
     done();
@@ -143,7 +248,7 @@ Tinytest.addAsync('Check written data, without {data} [From CLIENT to SERVER]', 
       test.isTrue(!!mongoLogger.collection.findOne({message: 'cwdwodfc2s Test "trace"'}).additional.stackTrace);
       test.isTrue(!!mongoLogger.collection.findOne({message: 'cwdwodfc2s Test "_"'}));
       done();
-    }, 2048);
+    }, 512);
   } else {
     test.isTrue(true);
     done();
@@ -179,7 +284,7 @@ Tinytest.addAsync('Check written data, with data [From CLIENT to SERVER]', (test
       test.isTrue(!!mongoLogger.collection.findOne({'additional.data': 'cwdwdfc2s Test "_"'}), 'Data test: _');
       test.isTrue(!!mongoLogger.collection.findOne({message: 700}), 'Number test: 70');
       done();
-    }, 2048);
+    }, 512);
   } else {
     test.isTrue(true);
     done();
