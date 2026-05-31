@@ -4,7 +4,7 @@
  3. If your issue is not solved:
      - Give an expressive description of what is went wrong
      - Version of `ostrio:loggermongo` you're experiencing this issue
-     - Version of `Meteor` you're experiencing this issue
+     - Version of `ostrio:logger` and `Meteor` you're experiencing this issue
      - Is it *Server* or *Client* (*Browser*) issue?
      - Browser name and its version (Chrome, Firefox, Safari, etc.)?
      - Platform name and its version (Win, Mac, Linux)?
@@ -25,3 +25,12 @@
      - Make sure you're using correct markdown markup
      - Make sure all code blocks starts with triple ``` (*backtick*) and have a syntax tag, for more read [this docs](https://help.github.com/articles/creating-and-highlighting-code-blocks/#syntax-highlighting)
      - Post addition/changes as issue ticket, we will manage it
+
+### Running tests locally
+
+```bash
+npm i -g @zodern/mtest
+mtest --package ./ --once 3.4
+```
+
+**Meteor 3:** Use `ostrio:logger` **≥ 2.2.0** (publish to Atmosphere before adapter CI will resolve the latest core). Tests use `mtest` with matrix releases `2.14`–`3.4`.
