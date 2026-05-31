@@ -25,8 +25,8 @@ const collectionFindOne = (collection, selector) => {
 const log = new Logger();
 const mongoLogger = (new LoggerMongo(log)).enable();
 
-const mongoWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 1500 : 256;
-const mongoClientWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 2000 : 512;
+const mongoWriteDelay = 256;
+const mongoClientWriteDelay = 512;
 
 if (Meteor.isServer) {
   collectionRemove(mongoLogger.collection);
@@ -209,8 +209,9 @@ Tinytest.addAsync('Check written data, without {data} [SERVER]', (test, done) =>
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "error"'}));
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "fatal"'}));
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "warn"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "trace"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "trace"'}).additional.stackTrace);
+      const traceDoc = collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "trace"'});
+      test.isTrue(!!traceDoc);
+      test.isTrue(!!traceDoc && traceDoc.additional && traceDoc.additional.stackTrace);
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "_"'}));
 
       done();
@@ -244,7 +245,8 @@ Tinytest.addAsync('Check written data, with {data} [SERVER]', (test, done) => {
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 503}), 'Number test: 50');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "trace"'}), 'Data test: trace');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 603}), 'Data test: stackTrace');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 603}).additional.stackTrace, 'Number test: 60');
+      const traceDoc603 = collectionFindOne(mongoLogger.collection, {message: 603});
+      test.isTrue(!!traceDoc603 && traceDoc603.additional && traceDoc603.additional.stackTrace, 'Number test: 60');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "_"'}), 'Data test: _');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 703}), 'Number test: 70');
       done();
@@ -274,8 +276,9 @@ Tinytest.addAsync('Check written data, without {data} [From CLIENT to SERVER]', 
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}));
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}));
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'}).additional.stackTrace);
+      const traceDocClient = collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'});
+      test.isTrue(!!traceDocClient);
+      test.isTrue(!!traceDocClient && traceDocClient.additional && traceDocClient.additional.stackTrace);
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}));
       done();
     }, mongoClientWriteDelay);
@@ -309,7 +312,8 @@ Tinytest.addAsync('Check written data, with data [From CLIENT to SERVER]', (test
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}), 'Data test: warn');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 500}), 'Number test: 50');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}), 'Data test: trace');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}).additional.stackTrace);
+      const traceDocClientData = collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'});
+      test.isTrue(!!traceDocClientData && traceDocClientData.additional && traceDocClientData.additional.stackTrace);
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 600}), 'Number test: 60');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}), 'Data test: _');
       test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 700}), 'Number test: 70');
