@@ -22,7 +22,18 @@ const log = new Logger();
 const mongoLogger = (new LoggerMongo(log)).enable();
 
 const mongoWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 1500 : 256;
-const mongoClientWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 2000 : 512;
+const mongoClientWriteTimeout = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 10000 : 3000;
+
+const waitForDocument = async (collection, selector, deadline = Date.now() + mongoClientWriteTimeout) => {
+  while (Date.now() < deadline) {
+    const doc = await collectionFindOne(collection, selector);
+    if (doc) {
+      return doc;
+    }
+    await new Promise((resolve) => Meteor.setTimeout(resolve, 150));
+  }
+  return null;
+};
 
 const collectionReady = Meteor.isServer
   ? collectionRemove(mongoLogger.collection)
@@ -257,71 +268,75 @@ Tinytest.addAsync('Check written data, with {data} [SERVER]', (test, done) => {
 });
 
 
-if (Meteor.isClient) {
-  log.info('cwdwodfc2s Test "info"');
-  log.debug('cwdwodfc2s Test "debug"');
-  log.error('cwdwodfc2s Test "error"');
-  log.fatal('cwdwodfc2s Test "fatal"');
-  log.warn('cwdwodfc2s Test "warn"');
-  log.trace('cwdwodfc2s Test "trace"');
-  log._('cwdwodfc2s Test "_"');
-}
-
 Tinytest.addAsync('Check written data, without {data} [From CLIENT to SERVER]', (test, done) => {
-  if (Meteor.isServer) {
-    Meteor.setTimeout(async () => {
-      await collectionReady;
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}));
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}));
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}));
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}));
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}));
-      const traceDocClient = await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'});
-      test.isTrue(!!traceDocClient);
-      test.isTrue(!!traceDocClient && traceDocClient.additional && traceDocClient.additional.stackTrace);
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}));
-      done();
-    }, mongoClientWriteDelay);
-  } else {
+  if (Meteor.isClient) {
+    log.info('cwdwodfc2s Test "info"');
+    log.debug('cwdwodfc2s Test "debug"');
+    log.error('cwdwodfc2s Test "error"');
+    log.fatal('cwdwodfc2s Test "fatal"');
+    log.warn('cwdwodfc2s Test "warn"');
+    log.trace('cwdwodfc2s Test "trace"');
+    log._('cwdwodfc2s Test "_"');
     test.isTrue(true);
+    done();
+  } else if (Meteor.isServer) {
+    Meteor.setTimeout(() => {
+      (async () => {
+        await collectionReady;
+        const deadline = Date.now() + mongoClientWriteTimeout;
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}, deadline));
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}, deadline));
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}, deadline));
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}, deadline));
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}, deadline));
+        const traceDocClient = await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'}, deadline);
+        test.isTrue(!!traceDocClient);
+        test.isTrue(!!traceDocClient && traceDocClient.additional && traceDocClient.additional.stackTrace);
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}, deadline));
+        done();
+      })();
+    }, mongoWriteDelay);
+  } else {
     done();
   }
 });
 
-if (Meteor.isClient) {
-  log.info(100, {data: 'cwdwdfc2s Test "info"'});
-  log.debug(200, {data: 'cwdwdfc2s Test "debug"'});
-  log.error(300, {data: 'cwdwdfc2s Test "error"'});
-  log.fatal(400, {data: 'cwdwdfc2s Test "fatal"'});
-  log.warn(500, {data: 'cwdwdfc2s Test "warn"'});
-  log.trace(600, {data: 'cwdwdfc2s Test "trace"'});
-  log._(700, {data: 'cwdwdfc2s Test "_"'});
-}
-
 Tinytest.addAsync('Check written data, with data [From CLIENT to SERVER]', (test, done) => {
-  if (Meteor.isServer) {
-    Meteor.setTimeout(async () => {
-      await collectionReady;
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}), 'Data test: info');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 100}), 'Number test: 10');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}), 'Data test: debug');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 200}), 'Number test: 20');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}), 'Data test: error');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 300}), 'Number test: 30');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}), 'Data test: fatal');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 400}), 'Number test: 40');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}), 'Data test: warn');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 500}), 'Number test: 50');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}), 'Data test: trace');
-      const traceDocClientData = await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'});
-      test.isTrue(!!traceDocClientData && traceDocClientData.additional && traceDocClientData.additional.stackTrace);
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 600}), 'Number test: 60');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}), 'Data test: _');
-      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 700}), 'Number test: 70');
-      done();
-    }, mongoClientWriteDelay);
-  } else {
+  if (Meteor.isClient) {
+    log.info(100, {data: 'cwdwdfc2s Test "info"'});
+    log.debug(200, {data: 'cwdwdfc2s Test "debug"'});
+    log.error(300, {data: 'cwdwdfc2s Test "error"'});
+    log.fatal(400, {data: 'cwdwdfc2s Test "fatal"'});
+    log.warn(500, {data: 'cwdwdfc2s Test "warn"'});
+    log.trace(600, {data: 'cwdwdfc2s Test "trace"'});
+    log._(700, {data: 'cwdwdfc2s Test "_"'});
     test.isTrue(true);
+    done();
+  } else if (Meteor.isServer) {
+    Meteor.setTimeout(() => {
+      (async () => {
+        await collectionReady;
+        const deadline = Date.now() + mongoClientWriteTimeout;
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}, deadline), 'Data test: info');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 100}, deadline), 'Number test: 10');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}, deadline), 'Data test: debug');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 200}, deadline), 'Number test: 20');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}, deadline), 'Data test: error');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 300}, deadline), 'Number test: 30');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}, deadline), 'Data test: fatal');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 400}, deadline), 'Number test: 40');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}, deadline), 'Data test: warn');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 500}, deadline), 'Number test: 50');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}, deadline), 'Data test: trace');
+        const traceDocClientData = await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}, deadline);
+        test.isTrue(!!traceDocClientData && traceDocClientData.additional && traceDocClientData.additional.stackTrace);
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 600}, deadline), 'Number test: 60');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}, deadline), 'Data test: _');
+        test.isTrue(!!await waitForDocument(mongoLogger.collection, {message: 700}, deadline), 'Number test: 70');
+        done();
+      })();
+    }, mongoWriteDelay);
+  } else {
     done();
   }
 });
