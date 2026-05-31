@@ -52,7 +52,7 @@ class LoggerMongo {
           this.options.collectionName = 'ostrioMongoLogger';
         }
 
-        this.collection = new Meteor.Collection(this.options.collectionName);
+        this.collection = new Mongo.Collection(this.options.collectionName);
         this.collection.deny({
           update() {
             return true;
@@ -84,7 +84,11 @@ class LoggerMongo {
           throw new Meteor.Error(400, '[ostrio:logger] [options.format]: Must return a plain Object!', record);
         }
 
-        this.collection.insert(record, noop);
+        if (this.collection.insertAsync) {
+          this.collection.insertAsync(record).catch(noop);
+        } else {
+          this.collection.insert(record, noop);
+        }
       }
     }, noop, false, false);
   }
