@@ -6,9 +6,9 @@ const noop = () => {};
 
 const collectionInsert = (collection, record) => {
   if (collection.insertAsync) {
-    Meteor.wrapAsync((doc, cb) => {
-      collection.insertAsync(doc).then((id) => cb(null, id)).catch(cb);
-    })(record);
+    collection.insertAsync(record).catch((err) => {
+      Meteor._debug('[ostrio:loggermongo] insert failed:', err);
+    });
     return;
   }
   collection.insert(record, noop);

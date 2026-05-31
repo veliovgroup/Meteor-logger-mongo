@@ -3,21 +3,17 @@ import { Meteor } from 'meteor/meteor';
 import { Logger, LoggerMessage } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
-const collectionRemove = (collection, selector = {}) => {
+const collectionRemove = async (collection, selector = {}) => {
   if (collection.removeAsync) {
-    Meteor.wrapAsync((sel, cb) => {
-      collection.removeAsync(sel).then((r) => cb(null, r)).catch(cb);
-    })(selector);
+    await collection.removeAsync(selector);
     return;
   }
   collection.remove(selector);
 };
 
-const collectionFindOne = (collection, selector) => {
+const collectionFindOne = async (collection, selector) => {
   if (collection.findOneAsync) {
-    return Meteor.wrapAsync((sel, cb) => {
-      collection.findOneAsync(sel).then((r) => cb(null, r)).catch(cb);
-    })(selector);
+    return collection.findOneAsync(selector);
   }
   return collection.findOne(selector);
 };
@@ -25,12 +21,12 @@ const collectionFindOne = (collection, selector) => {
 const log = new Logger();
 const mongoLogger = (new LoggerMongo(log)).enable();
 
-const mongoWriteDelay = 256;
-const mongoClientWriteDelay = 512;
+const mongoWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 1500 : 256;
+const mongoClientWriteDelay = (Meteor.isServer && mongoLogger.collection.insertAsync) ? 2000 : 512;
 
-if (Meteor.isServer) {
-  collectionRemove(mongoLogger.collection);
-}
+const collectionReady = Meteor.isServer
+  ? collectionRemove(mongoLogger.collection)
+  : Promise.resolve();
 
 Tinytest.add('LoggerMessage Instance', (test) => {
   test.instanceOf(log.info('This is message "info"', {data: 'Sample data "info"'}, 'userId "info"'), LoggerMessage);
@@ -160,22 +156,23 @@ Tinytest.addAsync('Log a Circular', (test, done) => {
   test.instanceOf(log._('Circular 70', dataObj), LoggerMessage);
 
   if (Meteor.isServer) {
-    Meteor.setTimeout(() => {
-      const assertCircular = (message) => {
-        const doc = collectionFindOne(mongoLogger.collection, {message});
+    Meteor.setTimeout(async () => {
+      await collectionReady;
+      const assertCircular = async (message) => {
+        const doc = await collectionFindOne(mongoLogger.collection, {message});
         if (!doc) {
           test.fail(`Expected log record: ${message}`);
           return;
         }
         test.isTrue(doc.additional.subObj.do.includes('[Circular]'));
       };
-      assertCircular('Circular 10');
-      assertCircular('Circular 20');
-      assertCircular('Circular 30');
-      assertCircular('Circular 40');
-      assertCircular('Circular 50');
-      assertCircular('Circular 60');
-      assertCircular('Circular 70');
+      await assertCircular('Circular 10');
+      await assertCircular('Circular 20');
+      await assertCircular('Circular 30');
+      await assertCircular('Circular 40');
+      await assertCircular('Circular 50');
+      await assertCircular('Circular 60');
+      await assertCircular('Circular 70');
       done();
     }, mongoWriteDelay);
   } else {
@@ -203,16 +200,17 @@ Tinytest.addAsync('Check written data, without {data} [SERVER]', (test, done) =>
     log.trace('cwdwods Test "trace"');
     log._('cwdwods Test "_"');
 
-    Meteor.setTimeout(() => {
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "info"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "debug"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "error"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "fatal"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "warn"'}));
-      const traceDoc = collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "trace"'});
+    Meteor.setTimeout(async () => {
+      await collectionReady;
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "info"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "debug"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "error"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "fatal"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "warn"'}));
+      const traceDoc = await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "trace"'});
       test.isTrue(!!traceDoc);
       test.isTrue(!!traceDoc && traceDoc.additional && traceDoc.additional.stackTrace);
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "_"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwods Test "_"'}));
 
       done();
     }, mongoWriteDelay);
@@ -232,23 +230,24 @@ Tinytest.addAsync('Check written data, with {data} [SERVER]', (test, done) => {
     log.trace(603, {data: 'cwdwds Test "trace"'});
     log._(703, {data: 'cwdwds Test "_"'});
 
-    Meteor.setTimeout(() => {
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "info"'}), 'Data test: info');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 103}), 'Number test: 10');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "debug"'}), 'Data test: debug');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 203}), 'Number test: 20');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "error"'}), 'Data test: error');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 303}), 'Number test: 30');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "fatal"'}), 'Data test: fatal');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 403}), 'Number test: 40');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "warn"'}), 'Data test: warn');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 503}), 'Number test: 50');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "trace"'}), 'Data test: trace');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 603}), 'Data test: stackTrace');
-      const traceDoc603 = collectionFindOne(mongoLogger.collection, {message: 603});
+    Meteor.setTimeout(async () => {
+      await collectionReady;
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "info"'}), 'Data test: info');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 103}), 'Number test: 10');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "debug"'}), 'Data test: debug');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 203}), 'Number test: 20');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "error"'}), 'Data test: error');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 303}), 'Number test: 30');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "fatal"'}), 'Data test: fatal');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 403}), 'Number test: 40');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "warn"'}), 'Data test: warn');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 503}), 'Number test: 50');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "trace"'}), 'Data test: trace');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 603}), 'Data test: stackTrace');
+      const traceDoc603 = await collectionFindOne(mongoLogger.collection, {message: 603});
       test.isTrue(!!traceDoc603 && traceDoc603.additional && traceDoc603.additional.stackTrace, 'Number test: 60');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "_"'}), 'Data test: _');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 703}), 'Number test: 70');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwds Test "_"'}), 'Data test: _');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 703}), 'Number test: 70');
       done();
     }, mongoWriteDelay);
   } else {
@@ -270,16 +269,17 @@ if (Meteor.isClient) {
 
 Tinytest.addAsync('Check written data, without {data} [From CLIENT to SERVER]', (test, done) => {
   if (Meteor.isServer) {
-    Meteor.setTimeout(() => {
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}));
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}));
-      const traceDocClient = collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'});
+    Meteor.setTimeout(async () => {
+      await collectionReady;
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}));
+      const traceDocClient = await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'});
       test.isTrue(!!traceDocClient);
       test.isTrue(!!traceDocClient && traceDocClient.additional && traceDocClient.additional.stackTrace);
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}));
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}));
       done();
     }, mongoClientWriteDelay);
   } else {
@@ -300,23 +300,24 @@ if (Meteor.isClient) {
 
 Tinytest.addAsync('Check written data, with data [From CLIENT to SERVER]', (test, done) => {
   if (Meteor.isServer) {
-    Meteor.setTimeout(() => {
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}), 'Data test: info');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 100}), 'Number test: 10');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}), 'Data test: debug');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 200}), 'Number test: 20');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}), 'Data test: error');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 300}), 'Number test: 30');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}), 'Data test: fatal');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 400}), 'Number test: 40');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}), 'Data test: warn');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 500}), 'Number test: 50');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}), 'Data test: trace');
-      const traceDocClientData = collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'});
+    Meteor.setTimeout(async () => {
+      await collectionReady;
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}), 'Data test: info');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 100}), 'Number test: 10');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}), 'Data test: debug');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 200}), 'Number test: 20');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}), 'Data test: error');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 300}), 'Number test: 30');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}), 'Data test: fatal');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 400}), 'Number test: 40');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}), 'Data test: warn');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 500}), 'Number test: 50');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}), 'Data test: trace');
+      const traceDocClientData = await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'});
       test.isTrue(!!traceDocClientData && traceDocClientData.additional && traceDocClientData.additional.stackTrace);
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 600}), 'Number test: 60');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}), 'Data test: _');
-      test.isTrue(!!collectionFindOne(mongoLogger.collection, {message: 700}), 'Number test: 70');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 600}), 'Number test: 60');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}), 'Data test: _');
+      test.isTrue(!!await collectionFindOne(mongoLogger.collection, {message: 700}), 'Number test: 70');
       done();
     }, mongoClientWriteDelay);
   } else {
@@ -329,30 +330,32 @@ if (Meteor.isServer) {
   Tinytest.addAsync('enable filter ERROR only', (test, done) => {
     const logFilter = new Logger();
     const filterLogger = new LoggerMongo(logFilter, {collectionName: 'ostrioMongoLoggerFilterTest'});
-    collectionRemove(filterLogger.collection);
-    filterLogger.enable({filter: ['ERROR']});
-    logFilter.info('filter-skip-info');
-    logFilter.error('filter-keep-error');
-    Meteor.setTimeout(() => {
-      test.isFalse(!!collectionFindOne(filterLogger.collection, {message: 'filter-skip-info'}));
-      test.isTrue(!!collectionFindOne(filterLogger.collection, {message: 'filter-keep-error'}));
-      collectionRemove(filterLogger.collection);
-      done();
-    }, mongoWriteDelay);
+    collectionRemove(filterLogger.collection).then(() => {
+      filterLogger.enable({filter: ['ERROR']});
+      logFilter.info('filter-skip-info');
+      logFilter.error('filter-keep-error');
+      Meteor.setTimeout(async () => {
+        test.isFalse(!!await collectionFindOne(filterLogger.collection, {message: 'filter-skip-info'}));
+        test.isTrue(!!await collectionFindOne(filterLogger.collection, {message: 'filter-keep-error'}));
+        await collectionRemove(filterLogger.collection);
+        done();
+      }, mongoWriteDelay);
+    });
   });
 
   Tinytest.addAsync('custom collection', (test, done) => {
     const logCustom = new Logger();
     const customCol = new Mongo.Collection('ostrioMongoLoggerCustomTest');
-    collectionRemove(customCol);
-    const customLogger = new LoggerMongo(logCustom, {collection: customCol});
-    customLogger.enable();
-    logCustom.info('custom-collection-msg');
-    Meteor.setTimeout(() => {
-      test.isTrue(!!collectionFindOne(customCol, {message: 'custom-collection-msg'}));
-      collectionRemove(customCol);
-      done();
-    }, mongoWriteDelay);
+    collectionRemove(customCol).then(() => {
+      const customLogger = new LoggerMongo(logCustom, {collection: customCol});
+      customLogger.enable();
+      logCustom.info('custom-collection-msg');
+      Meteor.setTimeout(async () => {
+        test.isTrue(!!await collectionFindOne(customCol, {message: 'custom-collection-msg'}));
+        await collectionRemove(customCol);
+        done();
+      }, mongoWriteDelay);
+    });
   });
 
   Tinytest.add('options.format must return object', (test) => {
