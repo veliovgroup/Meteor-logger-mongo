@@ -4,6 +4,16 @@ import { Logger } from 'meteor/ostrio:logger';
 import { check, Match } from 'meteor/check';
 const noop = () => {};
 
+const collectionInsert = (collection, record) => {
+  if (collection.insertAsync) {
+    Meteor.wrapAsync((doc, cb) => {
+      collection.insertAsync(doc).then((id) => cb(null, id)).catch(cb);
+    })(record);
+    return;
+  }
+  collection.insert(record, noop);
+};
+
 const helpers = {
   isObject(obj) {
     if (this.isArray(obj) || this.isFunction(obj)) {
@@ -84,11 +94,7 @@ class LoggerMongo {
           throw new Meteor.Error(400, '[ostrio:logger] [options.format]: Must return a plain Object!', record);
         }
 
-        if (this.collection.insertAsync) {
-          this.collection.insertAsync(record).catch(noop);
-        } else {
-          this.collection.insert(record, noop);
-        }
+        collectionInsert(this.collection, record);
       }
     }, noop, false, false);
   }
