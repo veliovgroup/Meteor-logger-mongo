@@ -25,6 +25,20 @@ meteor add ostrio:logger # If not yet installed
 meteor add ostrio:loggermongo
 ```
 
+### Compatibility
+
+- Meteor **2.14–3.4**
+- Meteor 3 requires `ostrio:logger` **≥ 2.2.0**
+- Uses `Mongo.Collection` (not `Meteor.Collection`, removed in Meteor 3)
+
+### Agent skill
+
+```bash
+npx skills add veliovgroup/Meteor-logger --skill meteor-logger -g
+```
+
+Covers `ostrio:logger` and all adapters.
+
 ## ES6 Import:
 
 ```js

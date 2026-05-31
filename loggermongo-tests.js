@@ -1,7 +1,7 @@
 import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
-import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 import { Logger, LoggerMessage } from 'meteor/ostrio:logger';
+import { LoggerMongo } from 'meteor/ostrio:loggermongo';
 
 const collectionRemove = (collection, selector = {}) => {
   if (collection.removeAsync) {
