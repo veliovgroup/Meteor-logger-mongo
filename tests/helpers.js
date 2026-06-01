@@ -82,38 +82,3 @@ export const failTest = (test, done) => (err) => {
   test.fail(err && err.message ? err.message : String(err));
   done();
 };
-
-export const hasConnectedClient = () => {
-  const sessions = Meteor.server && Meteor.server.sessions;
-  if (!sessions) {
-    return false;
-  }
-  if (typeof sessions.size === 'number') {
-    return sessions.size > 0;
-  }
-  return Object.keys(sessions).length > 0;
-};
-
-// Waits for a browser DDP session, gives the in-flight inserts a moment to
-// settle, then runs the polled assertions against a shared deadline.
-export const assertClientToServerWritten = (test, assertionFns, done) => {
-  const deadline = Date.now() + clientToServerTimeout;
-  const remainingMs = () => Math.max(500, deadline - Date.now());
-
-  const runAssertionsWithBudget = () => {
-    runAssertions(test, assertionFns.map((fn) => () => fn(remainingMs())), done);
-  };
-
-  const waitThenAssert = () => {
-    if (hasConnectedClient()) {
-      Meteor.setTimeout(runAssertionsWithBudget, mongoWriteDelay);
-      return;
-    }
-    if (remainingMs() <= mongoWriteDelay) {
-      runAssertionsWithBudget();
-      return;
-    }
-    Meteor.setTimeout(waitThenAssert, 100);
-  };
-  waitThenAssert();
-};

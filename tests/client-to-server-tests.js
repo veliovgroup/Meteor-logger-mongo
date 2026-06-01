@@ -1,67 +1,76 @@
 import { Meteor } from 'meteor/meteor';
-import { waitForDocument, assertClientToServerWritten } from './helpers.js';
-import { collection, emitWithoutData, emitWithData } from './c2s.js';
+import { emitWithoutData, emitWithData, findMethod } from './c2s.js';
 
-// The collection is fresh per mtest run, so there is nothing to clear at load —
-// and an unawaited server-side clear could otherwise race ahead and wipe the
-// client's in-flight inserts. The bridge Logger itself lives in `./c2s.js`,
-// which is loaded first so its method-name prefix matches across the bridge.
+// These tests run client-driven: the client emits through the real bridge and
+// then asks the server (which polls) whether each document landed. The browser
+// is, by definition, connected while its own test runs, so there is no race
+// against client connection — unlike a server-side test that must blindly wait
+// for a browser to appear. The server-side instance of each test is a trivial
+// pass; the meaningful assertions happen on the client.
 
-// Emit at load time on the client so the writes are already in flight by the
-// time the server-side test starts polling.
-if (Meteor.isClient) {
-  emitWithoutData();
-}
+const callFind = (selector) => new Promise((resolve, reject) => {
+  Meteor.call(findMethod, selector, (err, res) => (err ? reject(err) : resolve(res)));
+});
+
+const verify = (test, checks, done) => {
+  Promise.all(checks.map((c) => callFind(c.selector).then((doc) => ({ c, doc }))))
+    .then((results) => {
+      results.forEach(({ c, doc }) => {
+        test.isTrue(!!doc, `expected a stored document for ${JSON.stringify(c.selector)}`);
+        if (doc && c.requireStackTrace) {
+          test.isTrue(
+            !!(doc.additional && typeof doc.additional.stackTrace === 'string'),
+            `expected a stackTrace for ${JSON.stringify(c.selector)}`
+          );
+        }
+      });
+      done();
+    })
+    .catch((err) => {
+      test.fail(err && err.message ? err.message : String(err));
+      done();
+    });
+};
 
 Tinytest.addAsync('client->server: logs without {data} reach the server collection', (test, done) => {
   if (Meteor.isServer) {
-    assertClientToServerWritten(test, [
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without info' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without debug' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without error' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without fatal' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without warn' }, t),
-      async (t) => {
-        const doc = await waitForDocument(collection, { message: 'c2s-without trace' }, t);
-        return !!doc && !!doc.additional && typeof doc.additional.stackTrace === 'string';
-      },
-      async (t) => !!await waitForDocument(collection, { message: 'c2s-without _' }, t)
-    ], done);
-  } else {
-    emitWithoutData();
     test.isTrue(true);
     done();
+    return;
   }
+  emitWithoutData();
+  verify(test, [
+    { selector: { message: 'c2s-without info' } },
+    { selector: { message: 'c2s-without debug' } },
+    { selector: { message: 'c2s-without error' } },
+    { selector: { message: 'c2s-without fatal' } },
+    { selector: { message: 'c2s-without warn' } },
+    { selector: { message: 'c2s-without trace' }, requireStackTrace: true },
+    { selector: { message: 'c2s-without _' } }
+  ], done);
 });
-
-if (Meteor.isClient) {
-  emitWithData();
-}
 
 Tinytest.addAsync('client->server: logs with {data} reach the server collection', (test, done) => {
   if (Meteor.isServer) {
-    assertClientToServerWritten(test, [
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with info' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 100 }, t),
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with debug' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 200 }, t),
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with error' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 300 }, t),
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with fatal' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 400 }, t),
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with warn' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 500 }, t),
-      async (t) => {
-        const doc = await waitForDocument(collection, { 'additional.data': 'c2s-with trace' }, t);
-        return !!doc && !!doc.additional && typeof doc.additional.stackTrace === 'string';
-      },
-      async (t) => !!await waitForDocument(collection, { message: 600 }, t),
-      async (t) => !!await waitForDocument(collection, { 'additional.data': 'c2s-with _' }, t),
-      async (t) => !!await waitForDocument(collection, { message: 700 }, t)
-    ], done);
-  } else {
-    emitWithData();
     test.isTrue(true);
     done();
+    return;
   }
+  emitWithData();
+  verify(test, [
+    { selector: { 'additional.data': 'c2s-with info' } },
+    { selector: { message: 100 } },
+    { selector: { 'additional.data': 'c2s-with debug' } },
+    { selector: { message: 200 } },
+    { selector: { 'additional.data': 'c2s-with error' } },
+    { selector: { message: 300 } },
+    { selector: { 'additional.data': 'c2s-with fatal' } },
+    { selector: { message: 400 } },
+    { selector: { 'additional.data': 'c2s-with warn' } },
+    { selector: { message: 500 } },
+    { selector: { 'additional.data': 'c2s-with trace' }, requireStackTrace: true },
+    { selector: { message: 600 } },
+    { selector: { 'additional.data': 'c2s-with _' } },
+    { selector: { message: 700 } }
+  ], done);
 });
