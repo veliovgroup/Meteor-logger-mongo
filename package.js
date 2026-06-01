@@ -16,5 +16,12 @@ Package.onUse((api) => {
 Package.onTest((api) => {
   api.use('tinytest');
   api.use(['ecmascript', 'mongo', 'check', 'ostrio:logger', 'ostrio:loggermongo']);
-  api.addFiles('loggermongo-tests.js');
+  // Focused suites; `tests/helpers.js` is pulled in transitively via import.
+  api.addFiles([
+    'tests/logger-message-tests.js',
+    'tests/record-shape-tests.js',
+    'tests/options-tests.js',
+    'tests/rules-tests.js',
+    'tests/client-to-server-tests.js'
+  ], ['client', 'server']);
 });
