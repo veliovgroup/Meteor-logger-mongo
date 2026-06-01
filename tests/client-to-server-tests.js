@@ -1,38 +1,11 @@
 import { Meteor } from 'meteor/meteor';
-import { Logger } from 'meteor/ostrio:logger';
-import { LoggerMongo } from 'meteor/ostrio:loggermongo';
-import { clearCollection, waitForDocument, assertClientToServerWritten } from './helpers.js';
+import { waitForDocument, assertClientToServerWritten } from './helpers.js';
+import { collection, emitWithoutData, emitWithData } from './c2s.js';
 
-// Same source file runs in both environments, so this Logger is constructed in
-// the same order on client and server and its `_logger_emit_Mongo` method name
-// (derived from the instance prefix) lines up across the DDP bridge.
-const log = new Logger();
-const adapter = new LoggerMongo(log, { collectionName: 'ostrioClientToServerTest' }).enable();
-const collection = adapter.collection;
-
-if (Meteor.isServer) {
-  clearCollection(collection);
-}
-
-const emitWithoutData = () => {
-  log.info('c2s-without info');
-  log.debug('c2s-without debug');
-  log.error('c2s-without error');
-  log.fatal('c2s-without fatal');
-  log.warn('c2s-without warn');
-  log.trace('c2s-without trace');
-  log._('c2s-without _');
-};
-
-const emitWithData = () => {
-  log.info(100, { data: 'c2s-with info' });
-  log.debug(200, { data: 'c2s-with debug' });
-  log.error(300, { data: 'c2s-with error' });
-  log.fatal(400, { data: 'c2s-with fatal' });
-  log.warn(500, { data: 'c2s-with warn' });
-  log.trace(600, { data: 'c2s-with trace' });
-  log._(700, { data: 'c2s-with _' });
-};
+// The collection is fresh per mtest run, so there is nothing to clear at load —
+// and an unawaited server-side clear could otherwise race ahead and wipe the
+// client's in-flight inserts. The bridge Logger itself lives in `./c2s.js`,
+// which is loaded first so its method-name prefix matches across the bridge.
 
 // Emit at load time on the client so the writes are already in flight by the
 // time the server-side test starts polling.

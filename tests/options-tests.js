@@ -2,7 +2,7 @@ import { Mongo } from 'meteor/mongo';
 import { Meteor } from 'meteor/meteor';
 import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
-import { waitForDocument, clearCollection, runAssertions } from './helpers.js';
+import { waitForDocument, clearCollection, runAssertions, failTest } from './helpers.js';
 
 // This is the ONLY place in the suite that instantiates the default-named
 // collection, so it never collides with the other files' explicit names.
@@ -33,7 +33,7 @@ Tinytest.addAsync('options: honors a custom collectionName', (test, done) => {
   clearCollection(adapter.collection).then(() => {
     logger.info('opt-custom-name');
     runAssertions(test, [async () => !!await waitForDocument(adapter.collection, { message: 'opt-custom-name' })], done, () => clearCollection(adapter.collection));
-  });
+  }).catch(failTest(test, done));
 });
 
 Tinytest.addAsync('options: writes into a caller-supplied collection', (test, done) => {
@@ -49,7 +49,7 @@ Tinytest.addAsync('options: writes into a caller-supplied collection', (test, do
   clearCollection(customCollection).then(() => {
     logger.info('opt-supplied-collection');
     runAssertions(test, [async () => !!await waitForDocument(customCollection, { message: 'opt-supplied-collection' })], done, () => clearCollection(customCollection));
-  });
+  }).catch(failTest(test, done));
 });
 
 Tinytest.addAsync('options: format() transforms the stored record', (test, done) => {
@@ -79,7 +79,7 @@ Tinytest.addAsync('options: format() transforms the stored record', (test, done)
       test.equal(doc.additional.keep, 'me');
       return true;
     }], done, () => clearCollection(adapter.collection));
-  });
+  }).catch(failTest(test, done));
 });
 
 Tinytest.add('options: format() returning a non-object throws', (test) => {

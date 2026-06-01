@@ -1,7 +1,7 @@
 import { Meteor } from 'meteor/meteor';
 import { Logger } from 'meteor/ostrio:logger';
 import { LoggerMongo } from 'meteor/ostrio:loggermongo';
-import { mongoWriteDelay, delay, waitForDocument, findDoc, clearCollection, runAssertions } from './helpers.js';
+import { mongoWriteDelay, delay, waitForDocument, findDoc, clearCollection, runAssertions, failTest } from './helpers.js';
 
 Tinytest.add('rules: enable() is chainable and returns the adapter', (test) => {
   const adapter = new LoggerMongo(new Logger(), { collectionName: 'ostrioChainTest' });
@@ -41,7 +41,7 @@ Tinytest.addAsync('rules: enable:false writes nothing', (test, done) => {
       const b = await findDoc(adapter.collection, { message: 'rule-disabled-err' });
       return !a && !b;
     }], done, () => clearCollection(adapter.collection));
-  });
+  }).catch(failTest(test, done));
 });
 
 Tinytest.addAsync('rules: filter:[ERROR] keeps ERROR and drops other levels', (test, done) => {
@@ -62,7 +62,7 @@ Tinytest.addAsync('rules: filter:[ERROR] keeps ERROR and drops other levels', (t
       async () => !await findDoc(adapter.collection, { message: 'rule-filter-info' }),
       async () => !await findDoc(adapter.collection, { message: 'rule-filter-warn' })
     ], done, () => clearCollection(adapter.collection));
-  });
+  }).catch(failTest(test, done));
 });
 
 Tinytest.addAsync('rules: server:false suppresses server-side writes', (test, done) => {
@@ -79,5 +79,5 @@ Tinytest.addAsync('rules: server:false suppresses server-side writes', (test, do
       await delay(mongoWriteDelay * 2);
       return !await findDoc(adapter.collection, { message: 'rule-server-false' });
     }], done, () => clearCollection(adapter.collection));
-  });
+  }).catch(failTest(test, done));
 });

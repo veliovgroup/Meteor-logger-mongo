@@ -17,7 +17,11 @@ Package.onTest((api) => {
   api.use('tinytest');
   api.use(['ecmascript', 'mongo', 'check', 'ostrio:logger', 'ostrio:loggermongo']);
   // Focused suites; `tests/helpers.js` is pulled in transitively via import.
+  // `tests/c2s.js` MUST load first: it constructs the client->server bridge
+  // Logger before any other, pinning its Meteor-method prefix so it matches on
+  // both client and server.
   api.addFiles([
+    'tests/c2s.js',
     'tests/logger-message-tests.js',
     'tests/record-shape-tests.js',
     'tests/options-tests.js',

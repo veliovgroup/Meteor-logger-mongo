@@ -75,6 +75,14 @@ export const runAssertions = (test, assertionFns, done, finalize) => {
   });
 };
 
+// Reusable rejection handler for `.then()` chains in tests: fails the test with
+// the error message and finishes, so a rejected setup promise can never escape
+// as an unhandled rejection.
+export const failTest = (test, done) => (err) => {
+  test.fail(err && err.message ? err.message : String(err));
+  done();
+};
+
 export const hasConnectedClient = () => {
   const sessions = Meteor.server && Meteor.server.sessions;
   if (!sessions) {
