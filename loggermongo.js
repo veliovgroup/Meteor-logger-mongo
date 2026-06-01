@@ -91,7 +91,7 @@ class LoggerMongo {
         });
 
         if (!helpers.isObject(record)) {
-          throw new Meteor.Error(400, '[ostrio:logger] [options.format]: Must return a plain Object!', record);
+          throw new Meteor.Error(400, '[ostrio:loggermongo] [options.format]: Must return a plain Object!', record);
         }
 
         collectionInsert(this.collection, record);
