@@ -28,13 +28,54 @@ const clientToServerTimeout = String(Meteor.release).startsWith('METEOR@3') ? 15
 // `_logger_emit_Mongo` method round-trips. There is no fixed delay that is both
 // fast and reliable, so poll the collection until the document appears (or the
 // shared deadline elapses) instead of guessing a single timeout.
-const waitForDocument = async (collection, selector, deadline) => {
+const waitForDocument = async (collection, selector, timeoutMs = clientToServerTimeout) => {
+  const deadline = Date.now() + timeoutMs;
   let doc = await collectionFindOne(collection, selector);
   while (!doc && Date.now() < deadline) {
     await new Promise((resolve) => Meteor.setTimeout(resolve, 100));
     doc = await collectionFindOne(collection, selector);
   }
   return doc;
+};
+
+const hasConnectedClient = () => {
+  const sessions = Meteor.server && Meteor.server.sessions;
+  if (!sessions) {
+    return false;
+  }
+  if (typeof sessions.size === 'number') {
+    return sessions.size > 0;
+  }
+  return Object.keys(sessions).length > 0;
+};
+
+const waitForConnectedClient = (timeoutMs = clientToServerTimeout) => new Promise((resolve) => {
+  const deadline = Date.now() + timeoutMs;
+  const poll = () => {
+    if (hasConnectedClient()) {
+      resolve(true);
+      return;
+    }
+    if (Date.now() >= deadline) {
+      resolve(false);
+      return;
+    }
+    Meteor.setTimeout(poll, 100);
+  };
+  poll();
+});
+
+const assertClientToServerWritten = (test, assertions, done) => {
+  waitForConnectedClient().then((connected) => {
+    if (!connected) {
+      test.isTrue(false);
+      done();
+      return;
+    }
+    Meteor.setTimeout(() => {
+      assertWritten(test, assertions, done);
+    }, mongoWriteDelay);
+  });
 };
 
 if (Meteor.isServer) {
@@ -314,18 +355,17 @@ if (Meteor.isClient) {
 
 Tinytest.addAsync('Check written data, without {data} [From CLIENT to SERVER]', (test, done) => {
   if (Meteor.isServer) {
-    const deadline = Date.now() + clientToServerTimeout;
-    assertWritten(test, [
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}, deadline),
+    assertClientToServerWritten(test, [
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "info"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "debug"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "error"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "fatal"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "warn"'}),
       async () => {
-        const traceDocClient = await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'}, deadline);
+        const traceDocClient = await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "trace"'});
         return !!traceDocClient && traceDocClient.additional && traceDocClient.additional.stackTrace;
       },
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'}, deadline)
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 'cwdwodfc2s Test "_"'})
     ], done);
   } else {
     test.isTrue(true);
@@ -345,26 +385,25 @@ if (Meteor.isClient) {
 
 Tinytest.addAsync('Check written data, with data [From CLIENT to SERVER]', (test, done) => {
   if (Meteor.isServer) {
-    const deadline = Date.now() + clientToServerTimeout;
-    assertWritten(test, [
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 100}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 200}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 300}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 400}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 500}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}, deadline),
+    assertClientToServerWritten(test, [
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "info"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 100}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "debug"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 200}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "error"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 300}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "fatal"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 400}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "warn"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 500}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}),
       async () => {
-        const traceDocClientData = await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'}, deadline);
+        const traceDocClientData = await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "trace"'});
         return !!traceDocClientData && traceDocClientData.additional && traceDocClientData.additional.stackTrace;
       },
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 600}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}, deadline),
-      async () => !!await waitForDocument(mongoLogger.collection, {message: 700}, deadline)
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 600}),
+      async () => !!await waitForDocument(mongoLogger.collection, {'additional.data': 'cwdwdfc2s Test "_"'}),
+      async () => !!await waitForDocument(mongoLogger.collection, {message: 700})
     ], done);
   } else {
     test.isTrue(true);
