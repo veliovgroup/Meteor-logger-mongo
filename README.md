@@ -27,7 +27,7 @@ meteor add ostrio:loggermongo
 
 ### Compatibility
 
-- Meteor **2.14–3.4**
+- Meteor **2.14–3.4.***
 - Meteor 3 requires `ostrio:logger` **≥ 2.2.0**
 - Uses `Mongo.Collection` (not `Meteor.Collection`, removed in Meteor 3)
 
